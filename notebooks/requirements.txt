@@ -1,0 +1,10 @@
+streamlit==1.52.1
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+shap
+lime
+fairlearn
+wordcloud

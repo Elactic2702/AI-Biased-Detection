@@ -1,0 +1,9 @@
+# src/app.py (very small)
+import streamlit as st
+import joblib
+pipe = joblib.load('artifacts/logreg_baseline.joblib')
+text = st.text_area("Paste resume text")
+if st.button("Predict"):
+    pred = pipe.predict([text])[0]
+    st.write("Shortlist?" , "Yes" if pred==1 else "No")
+    # placeholder: show SHAP explanation later
