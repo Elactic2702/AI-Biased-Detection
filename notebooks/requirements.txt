@@ -8,3 +8,4 @@ shap
 lime
 fairlearn
 wordcloud
+joblib
