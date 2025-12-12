@@ -67,18 +67,21 @@ with col2:
     with st.expander("🔍 Show SHAP Explanation"):
         if resume_text and "vect" in st.session_state:
 
+            # Recreate explainer if model toggled
             if "explainer" not in st.session_state or st.session_state.get("explainer_model") != use_mitigation:
                 df_train = pd.read_csv("data/processed/processed_data.csv")
                 background_texts = df_train["cleaned_resume"].sample(50, random_state=42).tolist()
+                background_vect = tfidf.transform(background_texts)
 
                 st.session_state.explainer = shap.Explainer(
                     model.predict_proba,
-                    background_texts,
-                    vectorizer=tfidf
+                    background_vect
                 )
                 st.session_state.explainer_model = use_mitigation
 
-            shap_values = st.session_state.explainer([resume_text])
+            # Transform resume text for SHAP
+            resume_vect = tfidf.transform([resume_text])
+            shap_values = st.session_state.explainer(resume_vect)
             shap_html = shap.plots.text(shap_values[0], display=False)
             st.components.v1.html(shap_html, height=350)
 
