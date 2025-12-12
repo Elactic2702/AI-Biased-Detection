@@ -44,18 +44,23 @@ if st.checkbox("Show Fairness Metrics"):
 
 # ---------------------- SHAP Explanation ----------------------
 if resume_text:
-    if "explainer" not in st.session_state:
-        # Load background data for SHAP
-        df_train = pd.read_csv("data/processed/processed_data.csv")
-        background_vect = tfidf.transform(df_train["cleaned_resume"].sample(100, random_state=42)).toarray()
-        st.session_state.explainer = shap.KernelExplainer(model.predict_proba, background_vect)
 
-    # Compute SHAP values
-    shap_values = st.session_state.explainer.shap_values(st.session_state.vect)
+    # Load explainer once
+    if "explainer" not in st.session_state:
+        df_train = pd.read_csv("data/processed/processed_data.csv")
+        background_texts = df_train["cleaned_resume"].sample(100, random_state=42).tolist()
+
+        # Use a Text masker for SHAP
+        masker = shap.maskers.Text(tfidf)
+        st.session_state.explainer = shap.Explainer(model.predict_proba, masker)
+
+    # Compute SHAP values for current input
+    shap_values = st.session_state.explainer([resume_text])
 
     st.subheader("Why this prediction?")
     st.write("The plot below shows the words that influenced the decision:")
 
-    # SHAP text plot for class 1 (Selected)
+    # Display SHAP plot
     shap_html = shap.plots.text(shap_values[0], display=False)
     st.components.v1.html(shap_html, height=300)
+
