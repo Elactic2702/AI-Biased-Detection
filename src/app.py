@@ -57,5 +57,5 @@ if resume_text:
     st.write("The plot below shows the words that influenced the decision:")
 
     # SHAP text plot for class 1 (Selected)
-    shap_html = shap.plots.text(shap_values[1][0], display=False)
+    shap_html = shap.plots.text(shap_values[0], display=False)
     st.components.v1.html(shap_html, height=300)
