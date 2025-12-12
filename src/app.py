@@ -14,7 +14,6 @@ use_mitigation = st.checkbox("⚖️ Apply Bias Mitigation")
 # ------------------ Load model + vectorizer ------------------
 @st.cache_resource
 def load_model(use_mitigation: bool):
-    # Ensure files exist before loading
     if use_mitigation and os.path.exists("artifacts/logreg_model_mitigated.pkl"):
         model_path = "artifacts/logreg_model_mitigated.pkl"
     else:
@@ -42,7 +41,7 @@ with col1:
         if resume_text.strip() == "":
             st.warning("Please paste resume text first.")
         else:
-            vect = tfidf.transform([resume_text]).toarray()  # Convert to dense
+            vect = tfidf.transform([resume_text]).toarray()  # Dense array
             pred = model.predict(vect)[0]
             proba = model.predict_proba(vect)[0][1]
 
@@ -67,7 +66,6 @@ with col2:
     with st.expander("🔍 Show SHAP Explanation"):
         if resume_text and "vect" in st.session_state:
 
-            # Recreate explainer if model toggled
             if "explainer" not in st.session_state or st.session_state.get("explainer_model") != use_mitigation:
                 df_train = pd.read_csv("data/processed/processed_data.csv")
                 background_texts = df_train["cleaned_resume"].sample(50, random_state=42).tolist()
@@ -79,7 +77,6 @@ with col2:
                 )
                 st.session_state.explainer_model = use_mitigation
 
-            # Transform resume text for SHAP
             resume_vect = tfidf.transform([resume_text]).toarray()  # Dense
             shap_values = st.session_state.explainer(resume_vect)
             shap_html = shap.plots.text(shap_values[0], display=False)
@@ -97,8 +94,30 @@ with st.expander("📊 Fairness Metrics"):
     selection_rates = df.groupby("gender")["label"].mean()
     st.bar_chart(selection_rates, use_container_width=True)
 
-    gap = abs(selection_rates.max() - selection_rates.min())
-    if gap > 0.2:
-        st.error(f"⚠️ High bias detected (gap = {gap:.2f})")
+    # ------------------ Additional Fairness Metrics ------------------
+    privileged_group = 1  # Example: Male
+    unprivileged_group = 0  # Example: Female
+
+    sr_priv = selection_rates.get(privileged_group, 0)
+    sr_unpriv = selection_rates.get(unprivileged_group, 0)
+
+    # Metric 1: Selection Rate Gap
+    gap = abs(sr_priv - sr_unpriv)
+    st.markdown(f"**Selection Rate Gap:** {gap:.2f}")
+
+    # Metric 2: Disparate Impact (DI)
+    if sr_priv > 0:
+        di = sr_unpriv / sr_priv
+        st.markdown(f"**Disparate Impact (DI):** {di:.2f}")
     else:
-        st.success(f"✅ Bias within acceptable limits (gap = {gap:.2f})")
+        st.markdown("**Disparate Impact (DI):** Undefined")
+
+    # Metric 3: Statistical Parity Difference (SPD)
+    spd = sr_unpriv - sr_priv
+    st.markdown(f"**Statistical Parity Difference (SPD):** {spd:.2f}")
+
+    # Overall bias alert
+    if gap > 0.2 or di < 0.8 or di > 1.25 or abs(spd) > 0.2:
+        st.error("⚠️ High bias detected based on fairness metrics!")
+    else:
+        st.success("✅ Bias within acceptable limits based on fairness metrics.")
