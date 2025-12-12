@@ -1,6 +1,7 @@
 import streamlit as st
 import joblib
 import pandas as pd
+import shap
 
 st.title("AI Recruitment Bias Demo")
 
@@ -23,3 +24,19 @@ if st.checkbox("Show Fairness Metrics"):
     df = pd.read_csv("data/processed/processed_data.csv")
     gender_counts = df["gender"].value_counts()
     st.bar_chart(gender_counts)
+
+
+# Load explainer only once
+if "explainer" not in st.session_state:
+    st.session_state.explainer = shap.Explainer(model.predict_proba, tfidf)
+
+# Explain the prediction
+shap_values = st.session_state.explainer(vect)
+
+st.subheader("Why this prediction?")
+st.write("The plot below shows which words influenced the output.")
+
+shap_html = shap.plots.text(shap_values[0], display=False)
+st.components.v1.html(shap_html, height=300)
+
+   

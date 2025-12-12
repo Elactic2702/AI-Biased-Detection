@@ -9,3 +9,5 @@ lime
 fairlearn
 wordcloud
 joblib
+shap
+
