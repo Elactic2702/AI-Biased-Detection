@@ -35,17 +35,25 @@ if st.checkbox("Show Fairness Metrics"):
     st.bar_chart(gender_counts)
 
 # ---------------------- SHAP Explanation ----------------------
+
 if "vect" in st.session_state:
 
-    # Load explainer once
+    # Load explainer only once
     if "explainer" not in st.session_state:
-        st.session_state.explainer = shap.Explainer(model, tfidf)
 
-    # Use raw text for SHAP (required!)
-    shap_values = st.session_state.explainer([resume_text])
+        # Load some training data to create SHAP background
+        df_train = pd.read_csv("data/processed/processed_data.csv")
+        sample_texts = df_train["cleaned_text"].sample(200, random_state=42)  # adjust size if needed
+        
+        background_vectors = tfidf.transform(sample_texts).toarray()
+
+        st.session_state.explainer = shap.Explainer(model, background_vectors)
+
+    vect = st.session_state.vect.toarray()
+    shap_values = st.session_state.explainer(vect)
 
     st.subheader("Why this prediction?")
-    st.write("The plot below shows the words that influenced the decision:")
+    st.write("The plot shows which words influenced the decision:")
 
     shap_html = shap.plots.text(shap_values[0], display=False)
     st.components.v1.html(shap_html, height=300)
