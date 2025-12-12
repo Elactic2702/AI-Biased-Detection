@@ -42,7 +42,7 @@ with col1:
         if resume_text.strip() == "":
             st.warning("Please paste resume text first.")
         else:
-            vect = tfidf.transform([resume_text])
+            vect = tfidf.transform([resume_text]).toarray()  # Convert to dense
             pred = model.predict(vect)[0]
             proba = model.predict_proba(vect)[0][1]
 
@@ -71,7 +71,7 @@ with col2:
             if "explainer" not in st.session_state or st.session_state.get("explainer_model") != use_mitigation:
                 df_train = pd.read_csv("data/processed/processed_data.csv")
                 background_texts = df_train["cleaned_resume"].sample(50, random_state=42).tolist()
-                background_vect = tfidf.transform(background_texts)
+                background_vect = tfidf.transform(background_texts).toarray()  # Dense
 
                 st.session_state.explainer = shap.Explainer(
                     model.predict_proba,
@@ -80,7 +80,7 @@ with col2:
                 st.session_state.explainer_model = use_mitigation
 
             # Transform resume text for SHAP
-            resume_vect = tfidf.transform([resume_text])
+            resume_vect = tfidf.transform([resume_text]).toarray()  # Dense
             shap_values = st.session_state.explainer(resume_vect)
             shap_html = shap.plots.text(shap_values[0], display=False)
             st.components.v1.html(shap_html, height=350)
