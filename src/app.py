@@ -36,25 +36,20 @@ if st.checkbox("Show Fairness Metrics"):
 
 # ---------------------- SHAP Explanation ----------------------
 
-if "vect" in st.session_state:
+if resume_text:
 
-    # Load explainer only once
+    # Load explainer once
     if "explainer" not in st.session_state:
-
-        # Load some training data to create SHAP background
+        # Use a sample of the cleaned_resume for background
         df_train = pd.read_csv("data/processed/processed_data.csv")
-        sample_texts = df_train["cleaned_text"].sample(200, random_state=42)  # adjust size if needed
-        
-        background_vectors = tfidf.transform(sample_texts).toarray()
+        background_texts = df_train["cleaned_resume"].sample(100, random_state=42).tolist()
+        st.session_state.explainer = shap.Explainer(model.predict_proba, background_texts, vectorizer=tfidf)
 
-        st.session_state.explainer = shap.Explainer(model, background_vectors)
-
-    vect = st.session_state.vect.toarray()
-    shap_values = st.session_state.explainer(vect)
+    # Compute SHAP values for current input
+    shap_values = st.session_state.explainer([resume_text])
 
     st.subheader("Why this prediction?")
-    st.write("The plot shows which words influenced the decision:")
+    st.write("The plot below shows the words that influenced the decision:")
 
     shap_html = shap.plots.text(shap_values[0], display=False)
     st.components.v1.html(shap_html, height=300)
-
